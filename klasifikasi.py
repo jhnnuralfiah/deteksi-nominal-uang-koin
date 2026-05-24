@@ -19,21 +19,25 @@ def klasifikasi_koin(diameter_px):
     """
     Threshold berdasarkan analisis distribusi diameter aktual:
 
-    koin_1000 → 110-118px, mayoritas 112-114px
-    koin_200  → 110-122px, mayoritas 114-120px
-    koin_500  → 116-132px, mayoritas 124-130px
+    koin_100  → 92-110px,   mayoritas 104-106px
+    koin_1000 → 110-118px,  mayoritas 112-114px
+    koin_200  → 110-122px,  mayoritas 114-120px
+    koin_500  → 116-132px,  mayoritas 124-130px
 
     Batas optimal:
-      < 115px  → Rp1000  (mayoritas 1000 ada di sini)
-      115-121px → Rp200  (mayoritas 200 ada di sini)
-      >= 122px → Rp500   (500 mulai dari 122px ke atas)
+      >= 122px  → Rp500   (500 mulai dari 122px ke atas)
+      >= 115px  → Rp200   (mayoritas 200 ada di sini)
+      >= 110px  → Rp1000  (koin 1000 dimulai dari rentang ini)
+      < 110px   → Rp100   (hampir seluruh koin 100 berada di bawah 110px)
     """
     if diameter_px >= 122:
         return "Rp500"
     elif diameter_px >= 115:
         return "Rp200"
-    else:
+    elif diameter_px >= 110:
         return "Rp1000"
+    else:
+        return "Rp100"
 
 
 # ─────────────────────────────────────────────
@@ -58,6 +62,7 @@ def konversi_ke_asli(cx_csv, cy_csv, r_csv, h_asli, w_asli, target_size, margin)
 # ─────────────────────────────────────────────
 
 WARNA = {
+    "Rp100":  (255, 0, 255),    # magenta
     "Rp200":  (0, 255, 0),      # hijau
     "Rp500":  (255, 165, 0),    # oranye
     "Rp1000": (0, 0, 255),      # merah
@@ -142,9 +147,10 @@ def run(cfg):
     print(f"\n{'='*55}")
     print(f"  KLASIFIKASI RULE-BASED - Nominal Koin Rupiah")
     print(f"  Threshold:")
-    print(f"    diameter >= 122px → Rp500")
+    print(f"    diameter >= 122px  → Rp500")
     print(f"    diameter 115-121px → Rp200")
-    print(f"    diameter < 115px  → Rp1000")
+    print(f"    diameter 110-114px → Rp1000")
+    print(f"    diameter < 110px   → Rp100")
     print(f"  Total file: {len(data_per_file)}")
     print(f"{'='*55}\n")
 
@@ -154,6 +160,7 @@ def run(cfg):
 
     # Hitung per kelas untuk analisis detail
     detail = {
+        "Rp100":  {"benar": 0, "salah": 0},
         "Rp200":  {"benar": 0, "salah": 0},
         "Rp500":  {"benar": 0, "salah": 0},
         "Rp1000": {"benar": 0, "salah": 0},

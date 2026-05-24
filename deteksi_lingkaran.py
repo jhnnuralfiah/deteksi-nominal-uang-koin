@@ -9,6 +9,7 @@ CONFIG = {
     "supported_ext": {".jpg", ".jpeg", ".png", ".bmp"},
     "margin":        60,
 
+    # Parameter untuk koin_200, koin_500, koin_1000
     "cht": {
         "dp":        1,
         "minDist":   100,
@@ -16,6 +17,16 @@ CONFIG = {
         "param2":    32,
         "minRadius": 55,
         "maxRadius": 80,
+    },
+
+    # Parameter khusus koin_100 (lebih kecil & lebih sensitif)
+    "cht_100": {
+        "dp":        1,
+        "minDist":   85,
+        "param1":    50,
+        "param2":    40,
+        "minRadius": 40,
+        "maxRadius": 65,
     }
 }
 
@@ -69,20 +80,18 @@ def run(cfg):
         print(f"[ERROR] Folder '{input_root}' tidak ditemukan!")
         return
 
-    # Kumpulkan semua gambar + deduplikasi
     all_images = []
     for ext in cfg["supported_ext"]:
         all_images += [p for p in input_root.rglob(f"*{ext}")
                        if not p.name.startswith("_cmp_")]
         all_images += [p for p in input_root.rglob(f"*{ext.upper()}")
                        if not p.name.startswith("_cmp_")]
-    all_images = list(set(all_images))  # ← deduplikasi path
+    all_images = list(set(all_images))
 
     if not all_images:
         print("[WARNING] Tidak ada gambar ditemukan!")
         return
 
-    # Bersihkan output lama
     if output_root.exists():
         for old_file in output_root.rglob("*"):
             if old_file.is_file():
@@ -112,7 +121,13 @@ def run(cfg):
             m        = cfg["margin"]
             img_gray = img_gray[m:h-m, m:w-m]
 
-            circles    = detect_circles(img_gray, cfg["cht"])
+            # ← Pilih parameter CHT sesuai label folder
+            if label == "koin_100":
+                cfg_cht = cfg["cht_100"]
+            else:
+                cfg_cht = cfg["cht"]
+
+            circles    = detect_circles(img_gray, cfg_cht)
             result_img = draw_circles(img_gray, circles)
             cv2.imwrite(str(out_dir / img_path.name), result_img)
 
@@ -131,7 +146,7 @@ def run(cfg):
             print(f"  [GAGAL] {relative} — {e}")
             fail += 1
 
-    # ── Hapus duplikat sebelum simpan CSV ──────────────
+    # Hapus duplikat
     seen = set()
     unique_features = []
     for row in all_features:
@@ -140,9 +155,8 @@ def run(cfg):
         if key not in seen:
             seen.add(key)
             unique_features.append(row)
-    # ───────────────────────────────────────────────────
 
-    # Simpan CSV bersih
+    # Simpan CSV
     csv_path = output_root / "hasil_fitur.csv"
     with open(csv_path, "w", newline="") as f:
         fieldnames = ["file", "label", "koin_ke", "center_x", "center_y",
